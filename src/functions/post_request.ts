@@ -27,7 +27,7 @@ const SERVER_RESERVED_HEADERS = [AUTHORIZATION_HEADER, CONTENT_TYPE_HEADER];
 import {
   GenerateContentRequest,
   CountTokensRequest,
-  RequestOptions,
+  RequestOptions, SessionRequestOptions,
 } from '../types/content';
 import {ClientError} from '../types/errors';
 import * as constants from '../util/constants';
@@ -52,7 +52,7 @@ export async function postRequest({
   token: string | null | undefined;
   data: GenerateContentRequest | CountTokensRequest;
   apiEndpoint?: string;
-  requestOptions?: RequestOptions;
+  requestOptions?: SessionRequestOptions;
   apiVersion?: string;
 }): Promise<Response | undefined> {
   const vertexBaseEndpoint = apiEndpoint ?? `${region}-${API_BASE_PATH}`;
@@ -73,28 +73,95 @@ export async function postRequest({
     necessaryHeaders,
     requestOptions
   );
+
+  const {
+    fetchOptions, clearAbortListenerCallback, clearSetTimeout
+  } = getFetchOptions(requestOptions)
+
   return fetch(vertexEndpoint, {
-    ...getFetchOptions(requestOptions),
+    ...fetchOptions,
     method: 'POST',
     headers: totalHeaders,
     body: JSON.stringify(data),
+  }).finally(() => {
+    // not matter what happens, event listeners on abort controller must be cleared
+    clearAbortListenerCallback?.()
+
+    // also clear timeouts as they are not needed anymore
+    clearSetTimeout?.()
   });
 }
 
-function getFetchOptions(requestOptions?: RequestOptions): RequestInit {
-  const fetchOptions = {} as RequestInit;
-  if (
-    !requestOptions ||
-    requestOptions.timeout === undefined ||
-    requestOptions.timeout < 0
-  ) {
-    return fetchOptions;
+type GetFetchOptionsReturnType = {
+  fetchOptions: RequestInit,
+  clearAbortListenerCallback?: () => void,
+  clearSetTimeout?: () => void
+}
+
+function getFetchOptions(requestOptions?: SessionRequestOptions): Readonly<GetFetchOptionsReturnType> {
+  const returnValue: GetFetchOptionsReturnType = {
+    fetchOptions: {} as RequestInit
   }
+
+  if (!requestOptions) {
+    return returnValue;
+  }
+
+  const hasTimeout = requestOptions.timeout !== undefined && requestOptions.timeout >= 0;
+  const hasSignal = requestOptions.signal !== undefined;
+  if (!hasTimeout && !hasSignal) {
+    return returnValue;
+  }
+
+  if (!hasTimeout) {
+    // just set signal if it actually exists
+    returnValue.fetchOptions.signal = requestOptions.signal;
+    return returnValue
+  }
+
+  /*
+   case where we have a timeout
+   distinguish cases whether an external signal is defined or not
+   in both cases we need our own abort controller
+
+   timeout can abort before
+  */
+
   const abortController = new AbortController();
-  const signal = abortController.signal;
-  setTimeout(() => abortController.abort(), requestOptions.timeout);
-  fetchOptions.signal = signal;
-  return fetchOptions;
+
+  if (hasSignal) {
+
+    const callbackFunction = () => {
+      // in case of a race condition with setTimeout callback, check if aborted first
+      abortController.abort("Request aborted.");
+    }
+
+    // make external signal abort our controller immediately
+    requestOptions.signal?.addEventListener("abort", callbackFunction, { once: true });
+
+    /*
+     after request is complete, calling function should clear the event from abort controller
+     to avoid potential memory leaks
+    */
+    returnValue.clearAbortListenerCallback = () => {
+      requestOptions.signal?.removeEventListener("abort", callbackFunction);
+    }
+  }
+
+  returnValue.fetchOptions.signal = abortController.signal;
+
+  const setTimeoutCallback = () => {
+    // timeout clears abort event from abort controller
+    returnValue.clearAbortListenerCallback?.();
+    abortController.abort("Request timed out.");
+  }
+  const setTimeoutId = setTimeout(setTimeoutCallback, requestOptions.timeout);
+
+  returnValue.clearSetTimeout = () => {
+    clearTimeout(setTimeoutId)
+  }
+
+  return returnValue;
 }
 
 function stringHasLineBreak(header?: string | null): boolean {

@@ -34,7 +34,7 @@ import {
   GenerationConfig,
   GetGenerativeModelParams,
   RequestOptions,
-  SafetySetting,
+  SafetySetting, SessionRequestOptions,
   StartChatParams,
   StartChatSessionRequest,
   StreamGenerateContentResult,
@@ -127,7 +127,8 @@ export class GenerativeModel {
    * @returns The GenerateContentResponse object with the response candidates.
    */
   async generateContent(
-    request: GenerateContentRequest | string
+    request: GenerateContentRequest | string,
+    requestOptions?: SessionRequestOptions
   ): Promise<GenerateContentResult> {
     request = formulateRequestToGenerateContentRequest(request);
     const formulatedRequest =
@@ -145,7 +146,10 @@ export class GenerativeModel {
       this.safetySettings,
       this.tools,
       this.toolConfig,
-      this.requestOptions
+      {
+        ...this.requestOptions,
+        ...requestOptions ?? {}
+      }
     );
   }
 
@@ -171,10 +175,12 @@ export class GenerativeModel {
    * ```
    *
    * @param request - {@link GenerateContentRequest}
+   * @param requestOptions - {@link SessionRequestOptions}
    * @returns Promise of {@link StreamGenerateContentResult}
    */
   async generateContentStream(
-    request: GenerateContentRequest | string
+    request: GenerateContentRequest | string,
+    requestOptions?: SessionRequestOptions
   ): Promise<StreamGenerateContentResult> {
     request = formulateRequestToGenerateContentRequest(request);
     const formulatedRequest =
@@ -192,7 +198,10 @@ export class GenerativeModel {
       this.safetySettings,
       this.tools,
       this.toolConfig,
-      this.requestOptions
+      {
+        ...this.requestOptions,
+        ...requestOptions ?? {}
+      }
     );
   }
 
@@ -212,16 +221,20 @@ export class GenerativeModel {
    * ```
    *
    * @param request - A CountTokensRequest object with the request contents.
+   * @param requestOptions - {@link SessionRequestOptions}
    * @returns The CountTokensResponse object with the token count.
    */
-  async countTokens(request: CountTokensRequest): Promise<CountTokensResponse> {
+  async countTokens(request: CountTokensRequest, requestOptions?: SessionRequestOptions): Promise<CountTokensResponse> {
     return countTokens(
       this.location,
       this.resourcePath,
       this.fetchToken(),
       request,
       this.apiEndpoint,
-      this.requestOptions
+      {
+        ...this.requestOptions,
+        ...requestOptions ?? {}
+      }
     );
   }
 
@@ -356,10 +369,12 @@ export class GenerativeModelPreview {
    * ```
    *
    * @param request - A GenerateContentRequest object with the request contents.
+   * @param requestOptions - {@link SessionRequestOptions}
    * @returns The GenerateContentResponse object with the response candidates.
    */
   async generateContent(
-    request: GenerateContentRequest | string
+    request: GenerateContentRequest | string,
+    requestOptions?: SessionRequestOptions
   ): Promise<GenerateContentResult> {
     request = formulateRequestToGenerateContentRequest(request);
     const formulatedRequest = {
@@ -379,7 +394,10 @@ export class GenerativeModelPreview {
       this.safetySettings,
       this.tools,
       this.toolConfig,
-      this.requestOptions
+      {
+        ...this.requestOptions,
+        ...requestOptions ?? {}
+      }
     );
   }
 
@@ -405,10 +423,12 @@ export class GenerativeModelPreview {
    * ```
    *
    * @param request - {@link GenerateContentRequest}
+   * @param requestOptions - {@link SessionRequestOptions}
    * @returns Promise of {@link StreamGenerateContentResult}
    */
   async generateContentStream(
-    request: GenerateContentRequest | string
+    request: GenerateContentRequest | string,
+    requestOptions?: SessionRequestOptions
   ): Promise<StreamGenerateContentResult> {
     request = formulateRequestToGenerateContentRequest(request);
     const formulatedRequest = {
@@ -428,7 +448,10 @@ export class GenerativeModelPreview {
       this.safetySettings,
       this.tools,
       this.toolConfig,
-      this.requestOptions
+      {
+        ...this.requestOptions,
+        ...requestOptions ?? {}
+      }
     );
   }
 
@@ -448,16 +471,20 @@ export class GenerativeModelPreview {
    * ```
    *
    * @param request - A CountTokensRequest object with the request contents.
+   * @param requestOptions - {@link SessionRequestOptions}
    * @returns The CountTokensResponse object with the token count.
    */
-  async countTokens(request: CountTokensRequest): Promise<CountTokensResponse> {
+  async countTokens(request: CountTokensRequest, requestOptions?: SessionRequestOptions): Promise<CountTokensResponse> {
     return countTokens(
       this.location,
       this.resourcePath,
       this.fetchToken(),
       request,
       this.apiEndpoint,
-      this.requestOptions
+      {
+        ...this.requestOptions,
+        ...requestOptions ?? {}
+      }
     );
   }
 

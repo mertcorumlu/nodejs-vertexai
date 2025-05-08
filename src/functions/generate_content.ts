@@ -19,8 +19,7 @@ import {
   GenerateContentRequest,
   GenerateContentResult,
   GenerationConfig,
-  RequestOptions,
-  SafetySetting,
+  SafetySetting, SessionRequestOptions,
   StreamGenerateContentResult,
   Tool,
 } from '../types/content';
@@ -57,7 +56,7 @@ export async function generateContent(
   safetySettings?: SafetySetting[],
   tools?: Tool[],
   toolConfig?: ToolConfig,
-  requestOptions?: RequestOptions
+  requestOptions?: SessionRequestOptions
 ): Promise<GenerateContentResult> {
   request = formatContentRequest(request, generationConfig, safetySettings);
 
@@ -114,7 +113,7 @@ export async function generateContentStream(
   safetySettings?: SafetySetting[],
   tools?: Tool[],
   toolConfig?: ToolConfig,
-  requestOptions?: RequestOptions
+  requestOptions?: SessionRequestOptions
 ): Promise<StreamGenerateContentResult> {
   request = formatContentRequest(request, generationConfig, safetySettings);
   validateGenerateContentRequest(request);

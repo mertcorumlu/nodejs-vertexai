@@ -1108,6 +1108,18 @@ export interface RequestOptions {
 }
 
 /**
+ * Request options params passed to generateContent** functions.
+ * sets options for a single request. overwrites defined per-class RequestOptions
+ */
+export interface SessionRequestOptions extends RequestOptions {
+  /** timeout in milli seconds. time out value needs to be non negative. a signal can abort request before timeout */
+  timeout?: number;
+
+  /** signal to cancel request */
+  signal?: AbortSignal
+}
+
+/**
  * A resource used in LLM queries for users to explicitly specify
  * what to cache and how to cache.
  */
